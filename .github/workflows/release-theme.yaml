@@ -86,7 +86,6 @@ jobs:
               workflow_id: 'release-image.yaml',
               ref: 'main',
               inputs: {
-                plugin_version: '${{ needs.check_if_version_upgraded.outputs.plugin_version }}',
                 theme_version: '${{ needs.check_if_version_upgraded.outputs.to_version }}'
               }
             })
