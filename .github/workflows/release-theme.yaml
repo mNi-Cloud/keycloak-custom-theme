@@ -4,9 +4,9 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
 permissions:
   contents: write
+  actions: write
 
 jobs:
   check_if_version_upgraded:
@@ -15,6 +15,7 @@ jobs:
       is_upgraded_version: ${{ steps.check_version.outputs.is_upgraded_version }}
       to_version: ${{ steps.check_version.outputs.to_version }}
       is_pre_release: ${{ steps.check_version.outputs.is_pre_release }}
+      plugin_version: ${{ steps.get_plugin_version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,7 +27,19 @@ jobs:
           echo "to_version=1.0.0" >> $GITHUB_OUTPUT
           echo "is_pre_release=false" >> $GITHUB_OUTPUT
 
+      - name: Get latest plugin version
+        id: get_plugin_version
+        if: steps.check_version.outputs.is_upgraded_version == 'true'
+        run: |
+          PLUGIN_VERSION=$(curl -s https://api.github.com/repos/${{ github.repository_owner }}/keycloak-plugin/releases/latest | jq -r .tag_name | sed 's/^v//')
+          if [ -z "$PLUGIN_VERSION" ]; then
+            echo "version=1.0.0" >> $GITHUB_OUTPUT  # デフォルトバージョン
+          else
+            echo "version=$PLUGIN_VERSION" >> $GITHUB_OUTPUT
+          fi
+
   create_github_release:
+    # 既存の create_github_release ジョブは変更なし
     runs-on: ubuntu-latest
     needs: check_if_version_upgraded
     if: needs.check_if_version_upgraded.outputs.is_upgraded_version == 'true'
